@@ -240,7 +240,7 @@
   .nps-btn {
     flex: 1;
     aspect-ratio: 1;
-    border-radius: 10px;
+    border-radius: 100px;
     border: 1.5px solid var(--border);
     background: white;
     font-size: 14px;
@@ -264,43 +264,6 @@
     color: var(--muted);
   }
 
-  /* Image Upload */
-  .upload-area {
-    border: 2px dashed var(--border);
-    border-radius: 12px;
-    padding: 30px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: rgba(0,192,255,0.02);
-  }
-  .upload-area:hover { border-color: var(--cyan); background: rgba(0,192,255,0.05); }
-  .upload-area p { font-size: 14px; color: var(--muted); margin-top: 10px; }
-  .upload-preview {
-    display: none;
-    margin-top: 15px;
-    position: relative;
-  }
-  .upload-preview img {
-    max-width: 100%;
-    max-height: 200px;
-    border-radius: 8px;
-    object-fit: cover;
-  }
-  .remove-img {
-    position: absolute;
-    top: -10px; right: -10px;
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    width: 24px; height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-
   /* Form Elements */
   textarea {
     width: 100%;
@@ -315,7 +278,8 @@
     resize: none;
     outline: none;
     line-height: 1.6;
-    min-height: 110px;
+    min-height: 150px;
+    margin-bottom: 4px;
   }
   textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,192,255,0.12); }
 
@@ -404,9 +368,10 @@
       </div>
 
       <form id="feedbackForm" novalidate>
+        <!-- 01 Overall -->
         <div class="form-section">
           <div class="section-label">01 — Overall</div>
-          <div class="section-title">How would you rate your experience?</div>
+          <div class="section-title">How was your overall experience?</div>
           <div class="rating-block">
             <div class="stars-row" id="starsRow"></div>
             <div class="rating-label" id="ratingLabel">Tap a star to rate</div>
@@ -415,9 +380,10 @@
 
         <div class="divider"></div>
 
+        <!-- 02 Why you paused/left -->
         <div class="form-section">
-          <div class="section-label">02 — Journey</div>
-          <div class="section-title">What held you back from continuing?</div>
+          <div class="section-label">02 — Understanding your journey</div>
+          <div class="section-title">What held you back from continuing your sessions?</div>
           <div class="pill-group">
             <label class="pill"><input type="checkbox" name="barrier" value="pricing"> 💸 Price / Affordability</label>
             <label class="pill"><input type="checkbox" name="barrier" value="therapist_fit"> 😐 Therapist fit</label>
@@ -429,6 +395,7 @@
 
         <div class="divider"></div>
 
+        <!-- 03 Re-engagement -->
         <div class="form-section">
           <div class="section-label">03 — Areas of Improvement</div>
           <div class="section-title">What might encourage you to book another session?</div>
@@ -442,33 +409,20 @@
 
         <div class="divider"></div>
 
+        <!-- 04 Detailed Feedback -->
         <div class="form-section">
-          <div class="section-label">04 — Evidence (Optional)</div>
-          <div class="section-title">Share a proof of your experience?</div>
-          <input type="file" id="imageInput" accept="image/*" style="display: none;">
-          <div class="upload-area" id="uploadArea">
-            <div class="icon-box" style="font-size: 24px; margin-bottom: 5px;">📸</div>
-            <p id="uploadText">Click to upload image</p>
-            <div class="upload-preview" id="uploadPreview">
-              <img src="" id="previewImg">
-              <div class="remove-img" id="removeImg">×</div>
-            </div>
-          </div>
+          <div class="section-label">04 — Your Experience</div>
+          <div class="section-title">Could you tell us more?</div>
+          <div class="section-sub">Help us understand the full context of your journey. What did you like? What could we have done differently? Your detailed stories help us build a better platform.</div>
+          <textarea id="openFeedback" placeholder="Share your detailed experience, frustrations, or specific ideas here..."></textarea>
+          <div class="char-count"><span id="charCount">0</span> / 2000</div>
         </div>
 
         <div class="divider"></div>
 
+        <!-- 05 NPS -->
         <div class="form-section">
-          <div class="section-label">05 — Feedback</div>
-          <div class="section-title">How can we improve?</div>
-          <textarea id="openFeedback" placeholder="Share your thoughts..."></textarea>
-          <div class="char-count"><span id="charCount">0</span> / 1000</div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="form-section">
-          <div class="section-label">06 — Recommend</div>
+          <div class="section-label">05 — Recommendation</div>
           <div class="section-title">How likely are you to recommend us?</div>
           <div class="nps-row" id="npsRow"></div>
           <div class="nps-labels"><span>Not likely</span><span>Extremely likely</span></div>
@@ -481,7 +435,7 @@
     <div id="successState" class="state-container status-screen">
       <div class="icon-box">✅</div>
       <h2>Success</h2>
-      <p>Thank you for your feedback. We've received it and will use it to improve MantraCare.</p>
+      <p>Thank you for your feedback. We read every response and it truly helps us improve.</p>
     </div>
   </div>
 
@@ -490,11 +444,9 @@
 
 <script>
   const API_BASE = "";
-
   let orderId = null;
   let selectedRating = 0;
   let selectedNPS = null;
-  let uploadedImageUrl = null;
 
   window.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
@@ -525,33 +477,37 @@
   function initUI() {
     const starsRow = document.getElementById('starsRow');
     const labels = ['', 'Very poor', 'Poor', 'Fair', 'Good', 'Excellent'];
-    for (let i = 1; i <= 5; i++) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'star-btn';
-      btn.innerHTML = `<svg viewBox="0 0 24 24"><path class="star-path" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
-      btn.onclick = () => {
-        selectedRating = i;
-        Array.from(starsRow.children).forEach((b, idx) => b.classList.toggle('active', idx < i));
-        document.getElementById('ratingLabel').textContent = `${labels[i]} — ${i}/5`;
-        updateProgress();
-      };
-      starsRow.appendChild(btn);
+    if (starsRow.children.length === 0) {
+        for (let i = 1; i <= 5; i++) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'star-btn';
+          btn.innerHTML = `<svg viewBox="0 0 24 24"><path class="star-path" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+          btn.onclick = () => {
+            selectedRating = i;
+            Array.from(starsRow.children).forEach((b, idx) => b.classList.toggle('active', idx < i));
+            document.getElementById('ratingLabel').textContent = `${labels[i]} — ${i}/5`;
+            updateProgress();
+          };
+          starsRow.appendChild(btn);
+        }
     }
 
     const npsRow = document.getElementById('npsRow');
-    for (let i = 0; i <= 10; i++) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'nps-btn';
-        btn.textContent = i;
-        btn.onclick = () => {
-          selectedNPS = i;
-          Array.from(npsRow.children).forEach(b => b.classList.remove('selected'));
-          btn.classList.add('selected');
-          updateProgress();
-        };
-        npsRow.appendChild(btn);
+    if (npsRow.children.length === 0) {
+        for (let i = 0; i <= 10; i++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'nps-btn';
+            btn.textContent = i;
+            btn.onclick = () => {
+              selectedNPS = i;
+              Array.from(npsRow.children).forEach(b => b.classList.remove('selected'));
+              btn.classList.add('selected');
+              updateProgress();
+            };
+            npsRow.appendChild(btn);
+        }
     }
 
     document.querySelectorAll('.pill input').forEach(input => {
@@ -567,53 +523,15 @@
       updateProgress();
     };
 
-    const uploadArea = document.getElementById('uploadArea');
-    const imageInput = document.getElementById('imageInput');
-    const preview = document.getElementById('uploadPreview');
-    const previewImg = document.getElementById('previewImg');
-
-    uploadArea.onclick = () => imageInput.click();
-    imageInput.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      document.getElementById('uploadText').textContent = 'Uploading...';
-      const formData = new FormData();
-      formData.append('file', file);
-
-      try {
-        const res = await fetch(`${API_BASE}/api/upload-image`, {
-          method: 'POST',
-          body: formData
-        });
-        const data = await res.json();
-        uploadedImageUrl = data.secure_url;
-        previewImg.src = uploadedImageUrl;
-        preview.style.display = 'block';
-        document.getElementById('uploadText').style.display = 'none';
-      } catch (err) {
-        alert('Upload failed');
-      } finally {
-        document.getElementById('uploadText').textContent = 'Change image';
-      }
-    };
-
-    document.getElementById('removeImg').onclick = (e) => {
-      e.stopPropagation();
-      uploadedImageUrl = null;
-      preview.style.display = 'none';
-      document.getElementById('uploadText').style.display = 'block';
-      imageInput.value = '';
-    };
-
     document.getElementById('feedbackForm').onsubmit = async (e) => {
       e.preventDefault();
       if (selectedRating === 0 || selectedNPS === null) {
-        alert('Please provide a rating and an NPS score.');
+        alert('Please provide a rating and an recommendation score.');
         return;
       }
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Saving...';
+      submitBtn.textContent = 'Saving My Response...';
 
       const payload = {
         order_id: orderId,
@@ -622,7 +540,7 @@
         encourage: Array.from(document.querySelectorAll('input[name="encourage"]:checked')).map(i => i.value).join(','),
         open_feedback: document.getElementById('openFeedback').value,
         nps: selectedNPS,
-        image_url: uploadedImageUrl
+        image_url: null // Retired image field
       };
 
       try {
@@ -648,11 +566,10 @@
 
   function updateProgress() {
     let score = 0;
-    if (selectedRating > 0) score += 20;
-    if (document.querySelectorAll('input[name="barrier"]:checked').length > 0) score += 20;
-    if (document.querySelectorAll('input[name="encourage"]:checked').length > 0) score += 20;
-    if (document.getElementById('openFeedback').value.trim().length > 0) score += 20;
-    if (selectedNPS !== null) score += 20;
+    if (selectedRating > 0) score += 25;
+    if (document.querySelectorAll('input[name="barrier"]:checked').length > 0) score += 25;
+    if (document.getElementById('openFeedback').value.trim().length > 0) score += 25;
+    if (selectedNPS !== null) score += 25;
     document.getElementById('progressFill').style.width = score + '%';
     document.getElementById('progressText').textContent = score + '% complete';
   }
