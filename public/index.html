@@ -489,8 +489,6 @@
 </div>
 
 <script>
-  const CLOUD_NAME = "dh02ythrk";
-  const UPLOAD_PRESET = "feedback_form_preset";
   const API_BASE = "";
 
   let orderId = null;
@@ -581,10 +579,9 @@
       document.getElementById('uploadText').textContent = 'Uploading...';
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', UPLOAD_PRESET);
 
       try {
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+        const res = await fetch(`${API_BASE}/api/upload-image`, {
           method: 'POST',
           body: formData
         });
