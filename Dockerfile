@@ -10,7 +10,7 @@ FROM --platform=linux/amd64 node:18-slim
 WORKDIR /app
 COPY --from=builder /app /app
 
-ENV PORT=3000
-EXPOSE 3000
+ENV PORT=80
+EXPOSE 80
 
 CMD ["node", "server.js"]
