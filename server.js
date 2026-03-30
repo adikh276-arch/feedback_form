@@ -8,8 +8,9 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Neon Connection
+console.log('Connecting to database...');
 const pool = new Pool({
-  connectionString: process.env.NEON_DATABASE_URL || 'postgresql://neondb_owner:npg_DLksFlGM6C0y@ep-patient-waterfall-a1phrgrq-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+  connectionString: process.env.NEON_DATABASE_URL,
 });
 
 // Middleware
@@ -19,6 +20,7 @@ app.use(express.json());
 // Initialize Database Table
 const initDb = async () => {
     try {
+        console.log('Initializing database schema...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS feedback (
                 id SERIAL PRIMARY KEY,
@@ -32,9 +34,10 @@ const initDb = async () => {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-        console.log('Database initialized successfully');
+        console.log('✅ Database initialized successfully');
     } catch (err) {
-        console.error('Error initializing database:', err);
+        console.error('❌ Error initializing database:', err.message);
+        // We don't exit(1) so the server stays up and we can see error logs in browser if needed
     }
 };
 initDb();
@@ -42,18 +45,17 @@ initDb();
 // UI Endpoint: Check submission status
 app.get('/api/check-submission', async (req, res) => {
     const { order_id } = req.query;
+    console.log(`Checking submission for order_id: ${order_id}`);
+    
     if (!order_id) {
         return res.status(400).json({ error: 'order_id is required' });
     }
 
     try {
         const result = await pool.query('SELECT 1 FROM feedback WHERE order_id = $1', [order_id]);
-        if (result.rows.length > 0) {
-            return res.json({ submitted: true });
-        }
-        return res.json({ submitted: false });
+        return res.json({ submitted: result.rows.length > 0 });
     } catch (err) {
-        console.error('Check submission error:', err);
+        console.error('Check submission error:', err.message);
         return res.status(500).json({ error: 'Database error' });
     }
 });
@@ -61,13 +63,14 @@ app.get('/api/check-submission', async (req, res) => {
 // UI Endpoint: Submit feedback
 app.post('/api/submit-feedback', async (req, res) => {
     const { order_id, rating, barriers, encourage, open_feedback, nps, image_url } = req.body;
+    console.log(`Attempting submission for order_id: ${order_id}`);
 
     if (!order_id) {
         return res.status(400).json({ error: 'order_id is required' });
     }
 
     try {
-        // Enforce uniqueness at application level too
+        // Enforce uniqueness at application level
         const check = await pool.query('SELECT 1 FROM feedback WHERE order_id = $1', [order_id]);
         if (check.rows.length > 0) {
             return res.status(409).json({ error: 'Feedback already submitted for this order' });
@@ -78,32 +81,36 @@ app.post('/api/submit-feedback', async (req, res) => {
             [order_id, rating, barriers, encourage, open_feedback, nps, image_url]
         );
 
-        return res.json({ success: true, message: 'Feedback submitted successfully' });
+        console.log(`✅ Feedback saved for order_id: ${order_id}`);
+        return res.json({ success: true });
     } catch (err) {
-        console.error('Submission error:', err);
+        console.error('Submission error:', err.message);
         return res.status(500).json({ error: 'Database error' });
     }
 });
 
 // Serve frontend assets
-// Serve static files from the 'public' directory
+// Handle BOTH prefixed and non-prefixed paths for maximum compatibility with reverse proxies
 app.use('/feedback_form', express.static(path.join(__dirname, 'public')));
+app.use('/', express.static(path.join(__dirname, 'public')));
 
-// SPA behavior: redirect all other requests to index.html within the subpath
+// SPA behavior: redirect all other requests to index.html
 app.get('/feedback_form/*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-});
-
-// Error page placeholder
-app.get('/error', (req, res) => {
-    res.send('<h1>Error: order_id is missing or invalid.</h1><p>Please check your link and try again.</p>');
+// Health check endpoint (Check both routes)
+app.get('/health', (req, res) => res.status(200).send('OK'));
+app.get('/', (req, res) => {
+    // If not serving static index, at least serve health
+    if (req.accepts('html')) {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    } else {
+        res.status(200).send('OK');
+    }
 });
 
 app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}/feedback_form/`);
+    console.log(`🚀 Server is running on port ${port}`);
+    console.log(`🔗 Local access: http://localhost:${port}/feedback_form/`);
 });

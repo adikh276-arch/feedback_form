@@ -380,27 +380,23 @@
   </div>
 
   <div class="card">
-    <!-- Loading State -->
     <div id="loadingState" class="state-container active">
       <div class="spinner"></div>
       <p style="text-align: center; color: var(--muted);">Checking your session...</p>
     </div>
 
-    <!-- Already Submitted State -->
     <div id="alreadySubmittedState" class="state-container status-screen">
       <div class="icon-box">📌</div>
       <h2>Already Completed</h2>
       <p>You have already filled this form for this order. Thank you for your contribution!</p>
     </div>
 
-    <!-- Error State -->
     <div id="errorState" class="state-container status-screen">
       <div class="icon-box">⚠️</div>
       <h2>Something's Missing</h2>
       <p>We couldn't find a valid order ID in your link. Please use the original link sent to you.</p>
     </div>
 
-    <!-- Active Form State -->
     <div id="formState" class="state-container">
       <div class="progress-wrap">
         <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
@@ -408,7 +404,6 @@
       </div>
 
       <form id="feedbackForm" novalidate>
-        <!-- 01 Rating -->
         <div class="form-section">
           <div class="section-label">01 — Overall</div>
           <div class="section-title">How would you rate your experience?</div>
@@ -420,7 +415,6 @@
 
         <div class="divider"></div>
 
-        <!-- 02 Barriers -->
         <div class="form-section">
           <div class="section-label">02 — Journey</div>
           <div class="section-title">What held you back from continuing?</div>
@@ -435,16 +429,26 @@
 
         <div class="divider"></div>
 
-        <!-- 03 Image Upload -->
         <div class="form-section">
-          <div class="section-label">03 — Support Proof (Optional)</div>
-          <div class="section-title">Share a photo of your experience?</div>
-          <div class="section-sub">You can upload a screenshot or photo if it helps explain your feedback.</div>
-          
+          <div class="section-label">03 — Areas of Improvement</div>
+          <div class="section-title">What might encourage you to book another session?</div>
+          <div class="pill-group">
+            <label class="pill"><input type="checkbox" name="encourage" value="discounts"> 🎟 Discounts or better plans</label>
+            <label class="pill"><input type="checkbox" name="encourage" value="new_therapist"> 🔄 Trying a different therapist</label>
+            <label class="pill"><input type="checkbox" name="encourage" value="flexible_times"> ⏰ More flexible appointment times</label>
+            <label class="pill"><input type="checkbox" name="encourage" value="more_resources"> 📚 Free resources</label>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="form-section">
+          <div class="section-label">04 — Evidence (Optional)</div>
+          <div class="section-title">Share a proof of your experience?</div>
           <input type="file" id="imageInput" accept="image/*" style="display: none;">
           <div class="upload-area" id="uploadArea">
             <div class="icon-box" style="font-size: 24px; margin-bottom: 5px;">📸</div>
-            <p id="uploadText">Click to upload or drag & drop</p>
+            <p id="uploadText">Click to upload image</p>
             <div class="upload-preview" id="uploadPreview">
               <img src="" id="previewImg">
               <div class="remove-img" id="removeImg">×</div>
@@ -454,9 +458,8 @@
 
         <div class="divider"></div>
 
-        <!-- 04 Words -->
         <div class="form-section">
-          <div class="section-label">04 — Feedback</div>
+          <div class="section-label">05 — Feedback</div>
           <div class="section-title">How can we improve?</div>
           <textarea id="openFeedback" placeholder="Share your thoughts..."></textarea>
           <div class="char-count"><span id="charCount">0</span> / 1000</div>
@@ -464,9 +467,8 @@
 
         <div class="divider"></div>
 
-        <!-- 05 NPS -->
         <div class="form-section">
-          <div class="section-label">05 — Recommend</div>
+          <div class="section-label">06 — Recommend</div>
           <div class="section-title">How likely are you to recommend us?</div>
           <div class="nps-row" id="npsRow"></div>
           <div class="nps-labels"><span>Not likely</span><span>Extremely likely</span></div>
@@ -476,7 +478,6 @@
       </form>
     </div>
 
-    <!-- Success State -->
     <div id="successState" class="state-container status-screen">
       <div class="icon-box">✅</div>
       <h2>Success</h2>
@@ -488,19 +489,15 @@
 </div>
 
 <script>
-  // Configuration
   const CLOUD_NAME = "dh02ythrk";
-  const UPLOAD_PRESET = "feedback_form_preset"; // You should create this unsigned preset in Cloudinary
-  const API_BASE = ""; // Relative to server
+  const UPLOAD_PRESET = "feedback_form_preset";
+  const API_BASE = "";
 
-  // State
   let orderId = null;
   let selectedRating = 0;
   let selectedNPS = null;
   let uploadedImageUrl = null;
-  let isUploading = false;
 
-  // Initialize
   window.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     orderId = params.get('order_id');
@@ -513,15 +510,11 @@
     try {
       const res = await fetch(`${API_BASE}/api/check-submission?order_id=${orderId}`);
       const data = await res.json();
-      
-      if (data.submitted) {
-        showState('alreadySubmittedState');
-      } else {
-        showState('formState');
-      }
+      if (data.submitted) showState('alreadySubmittedState');
+      else showState('formState');
     } catch (err) {
       console.error('Check failed', err);
-      showState('formState'); // Fallback to allowing form if check fails
+      showState('formState');
     }
   });
 
@@ -532,7 +525,6 @@
   }
 
   function initUI() {
-    // Stars
     const starsRow = document.getElementById('starsRow');
     const labels = ['', 'Very poor', 'Poor', 'Fair', 'Good', 'Excellent'];
     for (let i = 1; i <= 5; i++) {
@@ -549,7 +541,6 @@
       starsRow.appendChild(btn);
     }
 
-    // NPS
     const npsRow = document.getElementById('npsRow');
     for (let i = 0; i <= 10; i++) {
         const btn = document.createElement('button');
@@ -565,7 +556,6 @@
         npsRow.appendChild(btn);
     }
 
-    // Pillars
     document.querySelectorAll('.pill input').forEach(input => {
       input.onchange = () => {
         input.parentElement.classList.toggle('selected', input.checked);
@@ -573,29 +563,22 @@
       };
     });
 
-    // Char count
     const textarea = document.getElementById('openFeedback');
     textarea.oninput = () => {
       document.getElementById('charCount').textContent = textarea.value.length;
       updateProgress();
     };
 
-    // Image Upload
     const uploadArea = document.getElementById('uploadArea');
     const imageInput = document.getElementById('imageInput');
     const preview = document.getElementById('uploadPreview');
     const previewImg = document.getElementById('previewImg');
 
     uploadArea.onclick = () => imageInput.click();
-    
     imageInput.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
-      // Unsigned upload to Cloudinary
-      isUploading = true;
       document.getElementById('uploadText').textContent = 'Uploading...';
-      
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', UPLOAD_PRESET);
@@ -607,16 +590,13 @@
         });
         const data = await res.json();
         uploadedImageUrl = data.secure_url;
-        
         previewImg.src = uploadedImageUrl;
         preview.style.display = 'block';
         document.getElementById('uploadText').style.display = 'none';
       } catch (err) {
-        alert('Image upload failed. You can still submit the form.');
-        console.error(err);
+        alert('Upload failed');
       } finally {
-        isUploading = false;
-        document.getElementById('uploadText').textContent = 'Click to change';
+        document.getElementById('uploadText').textContent = 'Change image';
       }
     };
 
@@ -625,26 +605,24 @@
       uploadedImageUrl = null;
       preview.style.display = 'none';
       document.getElementById('uploadText').style.display = 'block';
-      document.getElementById('uploadText').textContent = 'Click to upload or drag & drop';
       imageInput.value = '';
     };
 
-    // Final Form Submit
     document.getElementById('feedbackForm').onsubmit = async (e) => {
       e.preventDefault();
       if (selectedRating === 0 || selectedNPS === null) {
         alert('Please provide a rating and an NPS score.');
         return;
       }
-      
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Storing Feedback...';
+      submitBtn.textContent = 'Saving...';
 
       const payload = {
         order_id: orderId,
         rating: selectedRating,
         barriers: Array.from(document.querySelectorAll('input[name="barrier"]:checked')).map(i => i.value).join(','),
+        encourage: Array.from(document.querySelectorAll('input[name="encourage"]:checked')).map(i => i.value).join(','),
         open_feedback: document.getElementById('openFeedback').value,
         nps: selectedNPS,
         image_url: uploadedImageUrl
@@ -656,32 +634,28 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        
         if (res.ok) {
           showState('successState');
           document.getElementById('progressFill').style.width = '100%';
-          document.getElementById('progressText').textContent = '100% complete';
         } else {
           const err = await res.json();
           alert(err.error || 'Submission failed');
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Try Again →';
         }
       } catch (err) {
-        alert('Network error. Please try again.');
+        alert('Network error');
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Try Again →';
       }
     };
   }
 
   function updateProgress() {
     let score = 0;
-    if (selectedRating > 0) score += 25;
-    if (document.querySelectorAll('input[name="barrier"]:checked').length > 0) score += 25;
-    if (document.getElementById('openFeedback').value.trim().length > 0) score += 25;
-    if (selectedNPS !== null) score += 25;
-    
+    if (selectedRating > 0) score += 20;
+    if (document.querySelectorAll('input[name="barrier"]:checked').length > 0) score += 20;
+    if (document.querySelectorAll('input[name="encourage"]:checked').length > 0) score += 20;
+    if (document.getElementById('openFeedback').value.trim().length > 0) score += 20;
+    if (selectedNPS !== null) score += 20;
     document.getElementById('progressFill').style.width = score + '%';
     document.getElementById('progressText').textContent = score + '% complete';
   }
