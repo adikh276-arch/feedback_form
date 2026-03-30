@@ -458,12 +458,14 @@
     }
 
     try {
-      const res = await fetch(`${API_BASE}/api/check-submission?order_id=${orderId}`);
+      const res = await fetch(`api/check-submission?order_id=${orderId}`);
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const data = await res.json();
       if (data.submitted) showState('alreadySubmittedState');
       else showState('formState');
     } catch (err) {
       console.error('Check failed', err);
+      // If API fails, allow form to load but log it
       showState('formState');
     }
   });
@@ -544,7 +546,7 @@
       };
 
       try {
-        const res = await fetch(`${API_BASE}/api/submit-feedback`, {
+        const res = await fetch(`api/submit-feedback`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -553,8 +555,10 @@
           showState('successState');
           document.getElementById('progressFill').style.width = '100%';
         } else {
-          const err = await res.json();
-          alert(err.error || 'Submission failed');
+          const errText = await res.text();
+          let msg = 'Submission failed';
+          try { msg = JSON.parse(errText).error; } catch(e) {}
+          alert(msg);
           submitBtn.disabled = false;
         }
       } catch (err) {

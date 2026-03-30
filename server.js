@@ -2,21 +2,10 @@ const express = require('express');
 const { Pool } = require('pg');
 const path = require('path');
 const cors = require('cors');
-const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 80;
-
-// Cloudinary Setup
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-const upload = multer({ storage: multer.memoryStorage() });
 
 // Neon Connection
 console.log('Connecting to database...');
@@ -52,9 +41,18 @@ const initDb = async () => {
 };
 initDb();
 
+// Generic API wrapper to handle both prefixed and non-prefixed API calls
+const defineApi = (method, endpoint, handler) => {
+    app[method](endpoint, handler);
+    app[method](`/api${endpoint.replace('/api', '')}`, handler);
+    app[method](`/feedback_form${endpoint}`, handler);
+    app[method](`/feedback_form/api${endpoint.replace('/api', '')}`, handler);
+};
+
 // UI Endpoint: Check submission status
-app.get('/api/check-submission', async (req, res) => {
+const checkHandler = async (req, res) => {
     const { order_id } = req.query;
+    console.log(`Checking order_id: ${order_id}`);
     if (!order_id) return res.status(400).json({ error: 'order_id is required' });
     try {
         const result = await pool.query('SELECT 1 FROM feedback WHERE order_id = $1', [order_id]);
@@ -63,29 +61,14 @@ app.get('/api/check-submission', async (req, res) => {
         console.error('Check error:', err.message);
         return res.status(500).json({ error: 'Database error' });
     }
-});
-
-// NEW Secure Image Upload Endpoint
-app.post('/api/upload-image', upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
-  // Stream upload to Cloudinary (using API key/secret safely on backend)
-  const stream = cloudinary.uploader.upload_stream(
-    { folder: 'feedback_form' },
-    (error, result) => {
-      if (error) {
-        console.error('Cloudinary error:', error);
-        return res.status(500).json({ error: 'Cloudinary upload failed' });
-      }
-      res.json({ secure_url: result.secure_url });
-    }
-  );
-  stream.end(req.file.buffer);
-});
+};
+app.get('/api/check-submission', checkHandler);
+app.get('/feedback_form/api/check-submission', checkHandler);
 
 // UI Endpoint: Submit feedback
-app.post('/api/submit-feedback', async (req, res) => {
+const submitHandler = async (req, res) => {
     const { order_id, rating, barriers, encourage, open_feedback, nps, image_url } = req.body;
+    console.log(`Attempting submission for order: ${order_id}`);
     if (!order_id) return res.status(400).json({ error: 'order_id is required' });
 
     try {
@@ -101,7 +84,9 @@ app.post('/api/submit-feedback', async (req, res) => {
         console.error('Submission error:', err.message);
         return res.status(500).json({ error: 'Database error' });
     }
-});
+};
+app.post('/api/submit-feedback', submitHandler);
+app.post('/feedback_form/api/submit-feedback', submitHandler);
 
 // Static assets
 app.use('/feedback_form', express.static(path.join(__dirname, 'public')));
@@ -113,6 +98,10 @@ app.get('/feedback_form/*', (req, res) => {
 
 // Health check
 app.get('/health', (req, res) => res.status(200).send('OK'));
+app.get('/', (req, res) => {
+    if (req.accepts('html')) res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    else res.status(200).send('OK');
+});
 
 app.listen(port, () => {
     console.log(`🚀 Server listening on port ${port}`);
